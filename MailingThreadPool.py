@@ -1,3 +1,4 @@
+import MailWriter
 from MailingService import MailingService
 from threading import Thread, Condition, Lock
 
@@ -26,6 +27,9 @@ class MailingThreadPool:
         # Start mailing threads so they await for requests.
         for m_thread in self.pool:
             m_thread.start()
+
+        # Empty mailbox
+        MailWriter.empty_mailbox()
 
 
     ## Checks if there are threads available to handle the client connection.

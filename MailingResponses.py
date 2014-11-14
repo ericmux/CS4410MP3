@@ -34,7 +34,7 @@ def msg_for_code(code, feedback):
     msg_body = ""
 
     if code == OK:
-        msg_body = "OK"
+        msg_body = "OK" if not feedback else "OK: " + feedback
 
     elif code == DATA_MODE:
         msg_body = "End data with <CR><LF>.<CR><LF>"
