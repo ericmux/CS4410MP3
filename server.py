@@ -4,6 +4,8 @@ import getopt
 import socket
 import sys
 
+from MailingThreadPool import MailingThreadPool
+
 # STOP!  Don't change this.  If you do, we will not be able to contact your
 # server when grading.  Instead, you should provide command-line arguments to
 # this program to select the IP and port on which you want to listen.  See below
@@ -13,11 +15,11 @@ port = 8765
 
 # handle a single client request
 class ConnectionHandler:
-    def __init__(self, socket):
-        self.socket = socket
+    def __init__(self):
+        self.mailing_thread_pool = MailingThreadPool()
 
-    def handle(self):
-        self.socket.close()
+    def handle(self, client_socket):
+        self.mailing_thread_pool.dispatch_mail_request(client_socket)
 
 # the main server loop
 def serverloop():
@@ -30,11 +32,15 @@ def serverloop():
     # start listening with a backlog of 5 connections
     serversocket.listen(5)
 
+    # create mailing thread pool
+    connection_handler = ConnectionHandler()
+
     while True:
         # accept a connection
         (clientsocket, address) = serversocket.accept()
-        ct = ConnectionHandler(clientsocket)
-        ct.handle()
+
+        # Handles the connection, blocking until it's possible if it can't immediately handle it.
+        connection_handler.handle(clientsocket)
 
 # You don't have to change below this line.  You can pass command-line arguments
 # -h/--host [IP] -p/--port [PORT] to put your server on a different IP/port.

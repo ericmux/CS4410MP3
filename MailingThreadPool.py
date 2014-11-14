@@ -1,4 +1,4 @@
-import time
+from MailingService import MailingService
 from threading import Thread, Condition, Lock
 
 POOL_SIZE = 32
@@ -8,7 +8,7 @@ class MailingThreadPool:
         self.lock = Lock()
         self.available_threads_cv = Condition(self.lock)
 
-        self.pool = [MailingService(self, i) for i in xrange(POOL_SIZE)]
+        self.pool = [MailingThread(self, i) for i in xrange(POOL_SIZE)]
 
         # Keeps track of which threads can still receive requests.
         self.open_threads_stack = list(self.pool)
@@ -65,9 +65,9 @@ class MailingThreadPool:
 
 ## Acutally handles the connection to the client. Has no synchronization logic at all, as it relies on
 ## the thread pool for this purpose.
-class MailingService(Thread):
+class MailingThread(Thread):
     def __init__(self, parent_pool, index):
-        super(MailingService, self).__init__()
+        super(MailingThread, self).__init__()
         self.mailing_thread_pool = parent_pool
         self.client_socket = None
         self.index = index
@@ -77,21 +77,9 @@ class MailingService(Thread):
             # Wait for a socket from the pool.
             self.mailing_thread_pool.await_mail_request(self)
 
-            ## TO DO: HANDLE CONNECTION
-            print "%d starts..." % self.index
-            for i in xrange(2000000):
-                pass
-            print "%d ends..." % self.index
+            ## Handle mail request under the whole SMTP logic.
+            mailing_service = MailingService(self.client_socket)
+            mailing_service.handle_mail_request()
 
             # Announce availability now the connection is handled.
             self.mailing_thread_pool.reopen_mail_service(self)
-
-pool = MailingThreadPool()
-
-
-## Tests
-for i in xrange(400):
-    pool.dispatch_mail_request(None)
-    print "Dispatched (%d)" % i
-
-print "DONE"

@@ -210,9 +210,9 @@ should be able to detect that your server sends the appropriate response.
 Please see the included 'multiclient.py' skeleton for more information.
 
 Here are some things you should keep in mind as you build your SMTP server:
- - Your thread pool should contain 32 threads.
- - Each thread should finish one connection before moving on to the next.
- - The producer (which calls accept on the listening socket) should not accept
+(OK) - Your thread pool should contain 32 threads.
+(OK) - Each thread should finish one connection before moving on to the next.
+(OK) - The producer (which calls accept on the listening socket) should not accept
    connections at a faster rate than the thread pool is processing them.  It is
    better to let them become backlogged in the OS than to accept them and let
    them sit on a queue.  Your implementation must behave in this fashion.
@@ -220,16 +220,16 @@ Here are some things you should keep in mind as you build your SMTP server:
    delivery.  This number should reflect the order of the emails in the
    mailbox.  For consistency, the first message is always 1, and every
    subsequent message is <number of previously delivered message> + 1.
- - You'll need to build at least one monitor to enable your multi-threaded
+(OK) - You'll need to build at least one monitor to enable your multi-threaded
    behavior to adhere to our spec.  Servers which do not implement proper
    monitors will not receive full credit.
- - We will test on the Linux networking stack using Python 2.7.  Although
+(OK) - We will test on the Linux networking stack using Python 2.7.  Although
    Windows provides a sockets API that Python wraps quite nicely, Python does
    not do anything to smooth over compatibility issues stemming from Windows
    not being Linux.  It is almost guaranteed that code developed exclusively
    for Windows will not work on Linux without a little effort.  Please be aware
    of this before you submit.
- - It is perfectly acceptable, and encouraged, to cross-test your SMTP server
+(OK) - It is perfectly acceptable, and encouraged, to cross-test your SMTP server
    with other students.  The procedure for doing so is to both log into the
    CSUGLab machines and spawn your server on a port that is known to both you
    and others.  At no time should you be in possesion of, or have access to,
