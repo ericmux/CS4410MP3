@@ -32,10 +32,10 @@ class MailingThreadPool:
     def __available_threads(self):
         return (len(self.open_threads_stack) != 0)
 
-    ## Used by server to hand over a new accepted client socket.
+    ## Used by server to hand over a new accepted client socket. Blocks if we cannot process the request yet.
     def dispatch_mail_request(self, client_socket):
         with self.lock:
-            # If we cannot process the request, block so we stop the producer from accepting new connections.
+            # If we cannot process the request, block so we stop the server from accepting new connections.
             while not self.__available_threads():
                 self.available_threads_cv.wait()
 
@@ -48,7 +48,7 @@ class MailingThreadPool:
             m_thread.client_socket = client_socket
 
 
-    # Used by the mailing threads to wait for their time to shine. Returns the client socket to respond to.
+    # Used by the mailing threads to wait for their time to shine.
     def await_mail_request(self, m_thread):
         with self.lock:
             while not self.invoked[m_thread]:
@@ -63,6 +63,8 @@ class MailingThreadPool:
             self.available_threads_cv.notify()
 
 
+## Acutally handles the connection to the client. Has no synchronization logic at all, as it relies on
+## the thread pool for this purpose.
 class MailingService(Thread):
     def __init__(self, parent_pool, index):
         super(MailingService, self).__init__()
@@ -86,7 +88,9 @@ class MailingService(Thread):
 
 pool = MailingThreadPool()
 
-for i in xrange(300):
+
+## Tests
+for i in xrange(400):
     pool.dispatch_mail_request(None)
     print "Dispatched (%d)" % i
 
