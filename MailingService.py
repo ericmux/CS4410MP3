@@ -299,6 +299,7 @@ class MailingService:
                     return recv_msg
             except timeout:
                 self.state = ServerState.CLOSE_CONNECTION
+                self.__send_response(MailingResponses.TIMEOUT)
                 return None
             except IOError:
                 self.state = ServerState.CLOSE_CONNECTION
