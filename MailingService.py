@@ -87,6 +87,10 @@ class MailingService:
             self.__send_msg(MailingResponses.ERROR_UNRECOGNIZED_CMD)
             return
 
+        if cmd != HELO:
+            self.__send_response(MailingResponses.ERROR_MISPLACED_CMD, "need HELO command")
+            return
+            
         if len(msg) == 1:
             self.__send_msg(MailingResponses.ERROR_PROPER_SYNTAX)
             return

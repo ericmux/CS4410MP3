@@ -12,9 +12,9 @@ DATA_MODE = 354
 
 ERROR_UNRECOGNIZED_CMD  = 500
 ERROR_PROPER_SYNTAX     = 501
-ERROR_DUPLICATION       = 503
+ERROR_MISPLACED_CMD     = 503
 ERROR_BAD_ADDRESS       = 555
-ERRORS = [ERROR_UNRECOGNIZED_CMD, ERROR_PROPER_SYNTAX, ERROR_DUPLICATION, ERROR_BAD_ADDRESS]
+ERRORS = [ERROR_UNRECOGNIZED_CMD, ERROR_PROPER_SYNTAX, ERROR_MISPLACED_CMD, ERROR_BAD_ADDRESS]
 
 TIMEOUT = 421
 
@@ -44,7 +44,7 @@ def msg_for_code(code, feedback):
             msg_body = "Error: command not recognized"
         elif code == ERROR_PROPER_SYNTAX:
             msg_body = "Syntax:  proper syntax"
-        elif code == ERROR_DUPLICATION:
+        elif code == ERROR_MISPLACED_CMD:
             msg_body = "Error: " + feedback
         elif code == ERROR_BAD_ADDRESS:
             msg_body = "<bad_email>: " + feedback
