@@ -1,30 +1,66 @@
-NETID:  <your netid here>
+NETID:  eg445
 
 Describe the contents of an IP packet and for each field describe the purpose it serves.
 
-    <your answer>
+    An IP packet transmitted over a packet-switched network is composed of the following data:
+        - Version:          4 bits, defining which version of IP we're using (IPv4 or IPv6, etc)
+        - IHL:              4 bits, describing the size of the header in terms of 32-bit words.
+        - TOS:              6 bits, Type of Service field, defined to allow prioritization of a certain datagrams, which might require
+                            very low delay/high throughput to function properly.
+        - Total length:     A short, containing the total size in bytes of the packet (including header).
+        - ID:               As short, Uniquely identifies the packets as belonging to a certain datagram.
+        - Flags:            3 bits, used to control the packet. Bit 0 is reserved to be 0, bit 1 defines whether or not
+                            the packet should be fragmented and bit 2 says if there are more packets to come after the current one.
+        - Fragment offset:  13 bits, specifies how close to the beggining of the unfragmented packet it is, as measured in
+                            8-byte blocks. The last packet has thus an offset of zero.
+        - TTL:              1 byte, it's the infamous Time to Live, it's the number of hops the packet can still do in the network
+                            before being dropped.
+        - Protocol:         Defines the protocol used by the data part of the packet (TCP/UDP etc).
+        - Header Checksum:  A short, which is used for error checking in the header. The router compares this field to
+                            the actual checksum and drops the packet if they don' match.
+        - Source Add:       An int, the source's IP address.
+        - Destination Add:  An int, the destination's IP address.
+        - Options:          Variable length field, used to define some special modes of travel, such as Source Route,
+                            Record Route, Timestamp, etc.
 
 Describe the general operation of the BGP protocol.
 
-    <your answer>
+    If an endpoint requires a route to another one, it checks its routing table
+    to see if it has the necessary information of the next hop which it should send
+    the packet in order to reach the other endpoint. If it lacks this information,
+    it will broadcast its desire to reach the other endpoint, which will trigger its
+    neighbours to respond announcing they know the path to the other endpoint. This
+    process goes recursively and the involved hosts routing tables are updated as
+    the search progress. One thing to note is that the hosts need to keep track of all
+    endpoints involved in the path, to avoid the counting to infinity problem, by which
+    cyclical paths are followed.
 
 Describe why the ethernet protocol necessitates a minimum packet size.
 
-    <your answer>
+    A host must never be made to believe it has transmitted a packet when in fact it
+    experienced a collision. If the packet size is too short, it might finish sending
+    and releasing the cable before it detects a collision has happened. A minimum packet
+    size of 64 bytes seems to be long enough to solve this issue.
 
 Describe how TCP reacts to congestion in the network.  Assume that
 congestion is brought on by BGP reconfiguring the path such that TCP
 packets now go through a bottleneck link of capacity B packets/second.
 Describe in detail what TCP will do when faced with this bottleneck.
 
-    <your answer>
+    Right after the BGP path reconfiguartion, the TCP window size will be such that it will be consuming some
+    W > B - C(t) of the bandwidth, where C(t) is the bandwith consumed by other streams/datagrams being routed through
+    the same link at time t. After it realizes that packets are being dropped, it does its exponential decrease in the
+    window size, halving it until it's W' <= B - C, and then linearly increases the window size so its consumption
+    hovers around B - C(t).
 
 Describe TCP's behavior when it is first getting started delivering data
 over a high latency, high-bandwidth channel such as a satellite link. Be
 sure to explain how TCP manages its window size during the initial
 connection setup.
 
-    <your answer>
+    TCP does a "Slow Start", which is very useful in this case. If it does a linearly increase on the window size,
+    it will take a lot of time until it can completely explore the available bandwidth. So TCP starts by doubling
+    the window size until it gets the first loss, at which point it changes the increase pattern to linear.
 
 On an ethernet segment, the ARP protocol is used to locate the ethernet
 address of a host whose IP address is known. On the Internet, DNS is

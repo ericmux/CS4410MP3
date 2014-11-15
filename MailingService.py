@@ -1,3 +1,4 @@
+import time
 import re
 
 from threading import Lock
@@ -68,27 +69,34 @@ class MailingService:
         self.__send_synack()
 
         while self.state != ServerState.CLOSE_CONNECTION:
+            elapsed_time = time.time()
             msg = self.__recv_msg()
+            elapsed_time = time.time() - elapsed_time
             print msg
 
             if self.state == ServerState.EXP_HELO:
-                self.__expect_helo(msg)
+                valid_msg = self.__expect_helo(msg)
+                self.__reset_timer(valid_msg, elapsed_time)
                 continue
 
             if self.state == ServerState.EXP_MAIL_FROM:
-                self.__expect_mail_from(msg)
+                valid_msg = self.__expect_mail_from(msg)
+                self.__reset_timer(valid_msg, elapsed_time)
                 continue
 
             if self.state == ServerState.EXP_RCPT_TO:
-                self.__expect_rcpt_to(msg)
+                valid_msg = self.__expect_rcpt_to(msg)
+                self.__reset_timer(valid_msg, elapsed_time)
                 continue
 
             if self.state == ServerState.EXP_DATA_OR_RECPT_TO:
-                self.__expect_data_or_rcpt_to(msg)
+                valid_msg = self.__expect_data_or_rcpt_to(msg)
+                self.__reset_timer(valid_msg, elapsed_time)
                 continue
 
             if self.state == ServerState.FETCH_DATA:
-                self.__expect_raw_data(msg)
+                valid_msg = self.__expect_raw_data(msg)
+                self.__reset_timer(valid_msg, elapsed_time)
                 continue
 
         print "Closing connection %d" % self.conn_id
@@ -98,82 +106,86 @@ class MailingService:
         msg = message.strip()
         if not msg:
             self.__send_msg(MailingResponses.ERROR_UNRECOGNIZED_CMD)
-            return
+            return False
 
         msg = msg.split()
 
         cmd = msg[0].upper()
         if cmd not in SMTP_COMMANDS:
             self.__send_response(MailingResponses.ERROR_UNRECOGNIZED_CMD)
-            return
+            return False
 
         if cmd != HELO:
             self.__send_response(MailingResponses.ERROR_MISPLACED_CMD, NEED_COMMAND_SKELETON.format(HELO))
-            return
+            return False
 
         # Discard interleaving whitespace.
         msg = filter(lambda x:x, msg)
 
         if len(msg) != 2:
             self.__send_response(MailingResponses.ERROR_PROPER_SYNTAX)
-            return
+            return False
 
         hostname = msg[1]
         if not hostname:
             self.__send_response(MailingResponses.ERROR_PROPER_SYNTAX)
-            return
+            return False
 
         self.hostname = hostname
         self.state = ServerState.EXP_MAIL_FROM
         self.__send_helo_ack()
+
+        return True
 
 
     def __expect_mail_from(self, message):
         msg = message.strip()
         if not msg:
             self.__send_response(MailingResponses.ERROR_UNRECOGNIZED_CMD)
-            return
+            return False
 
         msg = msg.split(':')
 
         cmd = msg[0].upper()
         if cmd not in SMTP_COMMANDS:
             self.__send_response(MailingResponses.ERROR_UNRECOGNIZED_CMD)
-            return
+            return False
 
         if cmd != MAIL_FROM:
             self.__send_response(MailingResponses.ERROR_MISPLACED_CMD, NEED_COMMAND_SKELETON.format(MAIL_FROM))
-            return
+            return False
 
         # Discard interleaving whitespace.
         msg = filter(lambda x:x, msg)
 
         if len(msg) != 2:
             self.__send_response(MailingResponses.ERROR_PROPER_SYNTAX)
-            return
+            return False
 
         addr = msg[1].strip()
         if re.findall('\s+', addr):
             self.__send_response(MailingResponses.ERROR_BAD_ADDRESS, "Sender address rejected")
-            return
+            return False
 
         self.send_addr = addr
         self.state = ServerState.EXP_RCPT_TO
         self.__send_response(MailingResponses.OK)
+
+        return True
 
 
     def __expect_rcpt_to(self, message):
         msg = message.strip()
         if not msg:
             self.__send_response(MailingResponses.ERROR_UNRECOGNIZED_CMD)
-            return
+            return False
 
         msg = msg.split(':')
 
         cmd = msg[0].upper()
         if cmd not in SMTP_COMMANDS:
             self.__send_response(MailingResponses.ERROR_UNRECOGNIZED_CMD)
-            return
+            return False
 
         if cmd != RCPT_TO:
             self.__send_response(MailingResponses.ERROR_MISPLACED_CMD, NEED_COMMAND_SKELETON.format(RCPT_TO))
@@ -184,34 +196,36 @@ class MailingService:
 
         if len(msg) != 2:
             self.__send_response(MailingResponses.ERROR_PROPER_SYNTAX)
-            return
+            return False
 
         addr = msg[1].strip()
         if re.findall('\s+', addr):
             self.__send_response(MailingResponses.ERROR_BAD_ADDRESS, "Recipient address invalid")
-            return
+            return False
 
         self.recpt_addrs.append(addr)
         self.state = ServerState.EXP_DATA_OR_RECPT_TO
         self.__send_response(MailingResponses.OK)
+
+        return True
 
 
     def __expect_data_or_rcpt_to(self, message):
         msg = message.strip()
         if not msg:
             self.__send_response(MailingResponses.ERROR_UNRECOGNIZED_CMD)
-            return
+            return False
 
         msg = msg.split(':')
 
         cmd = msg[0].upper()
         if cmd not in SMTP_COMMANDS:
             self.__send_response(MailingResponses.ERROR_UNRECOGNIZED_CMD)
-            return
+            return False
 
         if cmd != RCPT_TO and cmd != DATA:
             self.__send_response(MailingResponses.ERROR_MISPLACED_CMD, NEED_COMMAND_SKELETON.format(DATA))
-            return
+            return False
 
         # Discard interleaving whitespace.
         msg = filter(lambda x:x, msg)
@@ -220,24 +234,26 @@ class MailingService:
         if cmd == RCPT_TO:
             if len(msg) != 2:
                 self.__send_response(MailingResponses.ERROR_PROPER_SYNTAX)
-                return
+                return False
 
             addr = msg[1].strip()
             if re.findall('\s+', addr):
                 self.__send_response(MailingResponses.ERROR_BAD_ADDRESS, "Recipient address invalid")
-                return
+                return False
 
             self.recpt_addrs.append(addr)
             self.__send_response(MailingResponses.OK)
-            return
+            return False
 
         # Data command, handle.
         if len(msg) != 1:
             self.__send_response(MailingResponses.ERROR_PROPER_SYNTAX)
-            return
+            return False
 
         self.state = ServerState.FETCH_DATA
         self.__send_response(MailingResponses.DATA_MODE)
+
+        return True
 
     def __expect_raw_data(self, message):
         msg = message
@@ -247,9 +263,11 @@ class MailingService:
             self.__send_response(MailingResponses.OK, "Delivered message %d" % mail_number)
             self.state = ServerState.EXP_MAIL_FROM
             self.send_addr , self.recpt_addrs, self.data = "", [], []
-            return
+            return True
 
         self.data.append(msg)
+
+        return True
 
 
     def __send_response(self, code, feedback=''):
@@ -316,3 +334,9 @@ class MailingService:
     def __write_mail(self):
         mail_number = MailWriter.write_mail(self.hostname, MailingResponses.__netid__, self.send_addr, self.recpt_addrs, "\n".join(self.data))
         return mail_number
+
+    def __reset_timer(self, valid_msg, elapsed_time):
+        if valid_msg:
+            self.socket.settimeout(MAX_TIMEOUT)
+        else:
+            self.socket.settimeout(self.socket.gettimeout() - elapsed_time)

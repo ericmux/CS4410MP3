@@ -256,7 +256,7 @@ Submission Instructions
 Your submission should include at least the following files (named in exactly
 this fashion):
 
-README.txt:
+(OK) README.txt:
     A plain-text, ASCII file containing your netid, and a description of all
     problems you know about that exist in your implementation.  As usual, we
     simply use this to save us time, and will give your code the same

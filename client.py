@@ -15,25 +15,37 @@ def send(socket, message):
     socket.send(message.encode('utf-8'))
 
 def sendmsg(msgid, hostname, portnum, sender, receiver):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((hostname, portnum))
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((hostname, portnum))
 
-    send(s, "HELO %s\r\n" % socket.gethostname())
-    print(s.recv(1000))
+        send(s, "HELO %s\r\n" % socket.gethostname())
+        print(s.recv(1000))
 
-    send(s, "MAIL FROM: %s\r\n" % sender)
-    print(s.recv(1000))
+        send(s, "MAIL FROM: %s\r\n" % sender)
+        print(s.recv(1000))
 
-    send(s, "RCPT TO: %s\r\n" % receiver)
-    print(s.recv(1000))
+        send(s, "RCPT TO: %s\r\n" % receiver)
+        print(s.recv(1000))
 
-    time.sleep(10.5)
+        send(s, "RCPT TO: %s\r\n" % receiver)
+        print(s.recv(1000))
 
-    send(s, "DATA\r\nFrom: %s\r\nTo: %s\r\nDate: %s -0500\r\nSubject: msg %d\r\n\r\nContents of message %d end here.\r\n.\r\n" % (sender, receiver, datetime.datetime.now().ctime(), msgid, msgid))
+        ## Send bogus commands.
+        st = time.time()
+        for i in xrange(11):
+            time.sleep(1.0)
+            print time.time() - st
+            send(s, "MAIL FROM: %s\r\n" % sender)
+            print(s.recv(1000))
 
-    time.sleep(1.0)
+        send(s, "DATA\r\nFrom: %s\r\nTo: %s\r\nDate: %s -0500\r\nSubject: msg %d\r\n\r\nContents of message %d end here.\r\n.\r\n" % (sender, receiver, datetime.datetime.now().ctime(), msgid, msgid))
 
-    print(s.recv(1000))
+        time.sleep(1.0)
+
+        print(s.recv(1000))
+    except IOError:
+        pass
 
 
     print "END %d" % msgid
