@@ -1,4 +1,3 @@
-MP3
+python SMTP server
 ===
-name: Eric Gomes Muxagata Conrado
-netID: eg445
+A simple mail service written in Python.
